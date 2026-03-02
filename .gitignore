@@ -1,0 +1,12 @@
+Codes/Odia_Token_POS_Chunk_Morph.txt
+Codes/or-token-pos-morph-with-vibh-chunk-17022026.txt
+Codes/char2index.pkl
+Codes/word2index.pkl
+Codes/index-to-case-tb.pkl
+Codes/index-to-chunk-tb.pkl
+Codes/index-to-pos-tb.pkl
+Codes/index-to-vibh-tb.pkl
+Codes/index-to-gender-tb.pkl
+Codes/index-to-number-tb.pkl
+Codes/index-to-person-tb.pkl
+Codes/index-to-lcat-tb.pkl
