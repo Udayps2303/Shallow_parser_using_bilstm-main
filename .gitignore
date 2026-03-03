@@ -1,5 +1,16 @@
+# Ignore the following files and directories
+# Input files
 Codes/Odia_Token_POS_Chunk_Morph.txt
+Codes/testing_1153.conll
+Codes/training_17k.conll
+# Output files
 Codes/or-token-pos-morph-with-vibh-chunk-17022026.txt
+Codes/testing_1153-or-token-pos-morph-with-vibh-chunk-03032026.txt
+Codes/training_17k-or-token-pos-morph-with-vibh-chunk-03032026.txt
+# Reordered files for training and testing
+Codes/test.txt
+Codes/train.txt
+# Pickle files
 Codes/char2index.pkl
 Codes/word2index.pkl
 Codes/index-to-case-tb.pkl
