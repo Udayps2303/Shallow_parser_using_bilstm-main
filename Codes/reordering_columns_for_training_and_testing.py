@@ -1,5 +1,5 @@
-input_file = "testing_1153-or-token-pos-morph-with-vibh-chunk-03032026.txt"       # original tab-separated file (no header)
-output_file = "test.txt"  # output file
+input_file = "or-token-pos-morph-with-vibh-chunk-17022026.txt"       # original tab-separated file (no header)
+output_file = "17022026-train-file.txt"  # output file
 
 with open(input_file, "r", encoding="utf-8") as fin, open(output_file, "w", encoding="utf-8") as fout:
     for line in fin:
