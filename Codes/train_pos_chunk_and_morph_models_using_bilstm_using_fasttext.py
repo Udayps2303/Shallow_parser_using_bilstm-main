@@ -31,20 +31,19 @@ def createVectors(lines, wordEmbeddings, char2Index, lcat2Index, gender2Index, n
         for line in lines:
             if line.strip():
                 word, lcat, gender, number, person, case, vibh, pos, chunk = line.strip().split('\t')
-                charSequenceForWord = [char2Index[char] if char in char2Index else len(
-                    char2Index) + 1 for char in word]
+                charSequenceForWord = [char2Index.get(char, 1) for char in word]
                 charSequencesForWords.append(charSequenceForWord)
                 charSequenceForWord = []
                 sentenceVectors.append(
                     wordEmbeddings.get_word_vector(word).tolist())
-                lcatsForSent.append(lcat2Index[lcat])
-                gendersForSent.append(gender2Index[gender])
-                numbersForSent.append(number2Index[number])
-                personsForSent.append(person2Index[person])
-                casesForSent.append(case2Index[case])
-                vibhsForSent.append(vibh2Index[vibh])
-                posForSent.append(pos2Index[pos])
-                chunkForSent.append(chunk2Index[chunk])
+                lcatsForSent.append(lcat2Index[lcat] if lcat in lcat2Index else lcat2Index[list(lcat2Index.keys())[0]])
+                gendersForSent.append(gender2Index[gender] if gender in gender2Index else gender2Index[list(gender2Index.keys())[0]])
+                numbersForSent.append(number2Index[number] if number in number2Index else number2Index[list(number2Index.keys())[0]])
+                personsForSent.append(person2Index[person] if person in person2Index else person2Index[list(person2Index.keys())[0]])
+                casesForSent.append(case2Index[case] if case in case2Index else case2Index[list(case2Index.keys())[0]])
+                vibhsForSent.append(vibh2Index[vibh] if vibh in vibh2Index else vibh2Index[list(vibh2Index.keys())[0]])
+                posForSent.append(pos2Index[pos] if pos in pos2Index else pos2Index[list(pos2Index.keys())[0]])
+                chunkForSent.append(chunk2Index[chunk] if chunk in chunk2Index else chunk2Index[list(chunk2Index.keys())[0]])
             else:
                 if sentenceVectors:
                     allSentenceVectors.append(sentenceVectors)
@@ -116,7 +115,7 @@ def createReverseIndex(dictItems):
 def trainModelUsingBiLSTM(maxWordLen, maxSentLen, totalChars, trainGen, totalLcats, totalGenders, totalNumbers, totalPersons, totalCases, totalVibhs, totalPOS, totalChunks, weightFile, valGen, steps, valSteps, epochs=1):
     """Train a BiLSTM model for POS tagging, chunking, and morphological analysis."""
     embeddingLayer = Embedding(
-        totalChars + 1, 50, input_length=maxWordLen, trainable=True)
+        totalChars + 2, 50, input_length=maxWordLen, trainable=True)
     charInput = Input(shape=(maxWordLen,))
     charEmbedding = embeddingLayer(charInput)
     charOutput = Bidirectional(LSTM
@@ -124,7 +123,7 @@ def trainModelUsingBiLSTM(maxWordLen, maxSentLen, totalChars, trainGen, totalLca
     charModel = Model(charInput, charOutput)
     charSeq = Input(shape=(maxSentLen, maxWordLen))
     charTD = TimeDistributed(charModel)(charSeq)
-    wordSeq = Input(shape=(maxSentLen, 200))
+    wordSeq = Input(shape=(maxSentLen, 300))
     merge = concatenate([wordSeq, charTD], axis=-1)
     wordSeqLSTM = Bidirectional(LSTM(250, input_shape=(
         maxSentLen, 250), return_sequences=True, dropout=0.3), merge_mode='sum')(merge)
@@ -153,9 +152,15 @@ def trainModelUsingBiLSTM(maxWordLen, maxSentLen, totalChars, trainGen, totalLca
                              'activationForVibh': 'sparse_categorical_crossentropy', 'activationForPOS': 'sparse_categorical_crossentropy', 'activationForChunk': 'sparse_categorical_crossentropy'},
                        metrics=['accuracy'])
     print(finalModel.summary())
-    weightFile = weightFile + '-{epoch:d}-{loss:.2f}.wts'
-    checkpointCallback = ModelCheckpoint(weightFile, monitor='val_loss', verbose=0,
-                                         save_best_only=True, save_weights_only=False, mode='auto', save_freq='epoch')
+    weightFile = weightFile + '-{epoch:02d}-{val_loss:.2f}.weights.h5'
+    checkpointCallback = ModelCheckpoint(
+    filepath=weightFile,
+    monitor='val_loss',
+    verbose=1,
+    save_best_only=True,
+    save_weights_only=True,
+    mode='min'
+    )
     finalModel.fit(trainGen, steps_per_epoch=steps, epochs=epochs, validation_data=valGen, validation_steps=valSteps, callbacks=[checkpointCallback])
     return finalModel
 
