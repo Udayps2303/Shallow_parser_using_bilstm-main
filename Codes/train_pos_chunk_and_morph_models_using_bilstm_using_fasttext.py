@@ -1,12 +1,12 @@
 """Train POS, Chunk, and Morphological Tagger using BiLSTM model and data generator using Keras framework and FastText embeddings."""
-from keras.models import Model
-from keras.layers.embeddings import Embedding
-from keras.layers import Dense, concatenate, Activation, Bidirectional, LSTM, Input, TimeDistributed
-from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Embedding
+from tensorflow.keras.layers import Dense, concatenate, Activation, Bidirectional, LSTM, Input, TimeDistributed
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from argparse import ArgumentParser
 # from gensim.models import KeyedVectors
 from pickle import load
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import ModelCheckpoint
 import numpy as np
 import tensorflow as tf
 from re import findall

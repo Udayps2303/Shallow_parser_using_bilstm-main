@@ -11,6 +11,8 @@ Codes/training_17k-or-token-pos-morph-with-vibh-chunk-03032026.txt
 Codes/17022026-train-file.txt
 Codes/test.txt
 Codes/train.txt
+# Pretrained Odia fastText model
+Codes/cc.or.300.bin
 # Pickle files
 Codes/char2index.pkl
 Codes/word2index.pkl
