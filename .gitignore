@@ -13,6 +13,12 @@ Codes/test.txt
 Codes/train.txt
 # Pretrained Odia fastText model
 Codes/cc.or.300.bin
+# Model files
+Codes/bilstm_weights-01-4.75.weights.h5
+Codes/bilstm_weights-02-4.27.weights.h5
+Codes/bilstm_weights-06-4.03.weights.h5
+Codes/bilstm_weights-11-3.88.weights.h5
+Codes/bilstm_weights-12-3.82.weights.h5
 # Pickle files
 Codes/char2index.pkl
 Codes/word2index.pkl
