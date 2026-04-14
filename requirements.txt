@@ -4,3 +4,7 @@ numpy
 gensim
 fasttext
 tqdm
+pandas
+scikit-learn
+matplotlib
+seaborn
