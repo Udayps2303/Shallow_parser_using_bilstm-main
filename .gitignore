@@ -7,18 +7,46 @@ Codes/training_17k.conll
 Codes/or-token-pos-morph-with-vibh-chunk-17022026.txt
 Codes/testing_1153-or-token-pos-morph-with-vibh-chunk-03032026.txt
 Codes/training_17k-or-token-pos-morph-with-vibh-chunk-03032026.txt
+Codes/new_predicted_tags.txt
+Codes/new_testing_predicted_tags.txt
+Codes/predicted_tags.txt
+Codes/prediction_input.txt
+Codes/testing_predicted_tags.txt
+Codes/pred01_pure_fasttext.txt
+Codes/pred01_pure_random.txt
 # Reordered files for training and testing
 Codes/17022026-train-file.txt
 Codes/test.txt
 Codes/train.txt
-# Pretrained Odia fastText model
+Codes/all.txt
+Codes/test01.txt
+Codes/testing.txt
+# Pretrained Odia fastText model and memmap files
+Codes/fasttext_embeddings.memmap
+Codes/random_embeddings.memmap
 Codes/cc.or.300.bin
-# Model files
+# Word2vec files
+Codes/fasttext_word2vec.bin
+Codes/word2vec.bin
+# Model weights files
 Codes/bilstm_weights-01-4.75.weights.h5
-Codes/bilstm_weights-02-4.27.weights.h5
-Codes/bilstm_weights-06-4.03.weights.h5
-Codes/bilstm_weights-11-3.88.weights.h5
-Codes/bilstm_weights-12-3.82.weights.h5
+Codes/bilstm_weights-02-4.21.weights.h5
+Codes/bilstm_weights-06-3.99.weights.h5
+Codes/bilstm_weights-11-3.82.weights.h5
+Codes/bilstm_weights-12-3.79.weights.h5
+# Model saved
+Codes/fasttext_bilstm_weights-1-4.54.keras
+Codes/fasttext_bilstm_weights-2-4.51.keras
+Codes/fasttext_bilstm_weights-3-4.13.keras
+Codes/fasttext_bilstm_weights-6-4.31.keras
+Codes/fasttext_bilstm_weights-11-4.13.keras
+Codes/fasttext_bilstm_weights-12-3.99.keras
+Codes/random_bilstm_weights-1-4.57.keras
+Codes/random_bilstm_weights-2-4.46.keras
+Codes/random_bilstm_weights-3-4.11.keras
+Codes/random_bilstm_weights-6-4.28.keras
+Codes/random_bilstm_weights-11-4.12.keras
+Codes/random_bilstm_weights-12-3.99.keras
 # Pickle files
 Codes/char2index.pkl
 Codes/word2index.pkl
@@ -30,3 +58,4 @@ Codes/index-to-gender-tb.pkl
 Codes/index-to-number-tb.pkl
 Codes/index-to-person-tb.pkl
 Codes/index-to-lcat-tb.pkl
+Codes/embeddings_shape.pkl

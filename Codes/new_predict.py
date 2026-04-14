@@ -1,9 +1,8 @@
 """Script to predict POS, chunk, and morphological features using a trained BiLSTM model."""
-import fasttext
+from tracemalloc import start
+
+from gensim.models import KeyedVectors
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Embedding
-from tensorflow.keras.layers import Dense, concatenate, Activation, Bidirectional, LSTM, Input, TimeDistributed
 from argparse import ArgumentParser
 import numpy as np
 from tensorflow.keras.models import load_model
@@ -17,15 +16,19 @@ def loadObjectToPickleFile(pickleFilePath):
 
 
 def loadWordVectorsFromFile(filePath):
-    return fasttext.load_model(filePath)
+    return KeyedVectors.load_word2vec_format(
+        filePath, binary=True, unicode_errors='ignore')
 
 
-def vectorizeData(lines, wordEmbeddings, char2Index, maxWordLength, maxSentenceLength):
+def vectorizeData(lines, wordEmbeddings, char2Index, vectorLength, maxWordLength, maxSentenceLength):
     sentenceVectors, allSentenceVectors, charSequencesForWords, charSequencesForSentences = [], [], [], []
     for line in lines:
         line = line.strip()
         if line:
-            sentenceVectors.append(wordEmbeddings.get_word_vector(line).tolist())
+            if line in wordEmbeddings:
+                sentenceVectors.append(wordEmbeddings[line].tolist())
+            else:
+                sentenceVectors.append(np.zeros(vectorLength).tolist())
             charSequenceForWord = [char2Index[char] if char in char2Index else len(
                 char2Index)for char in line]
             if charSequenceForWord:
@@ -43,7 +46,7 @@ def vectorizeData(lines, wordEmbeddings, char2Index, maxWordLength, maxSentenceL
                         sentenceVectors[(i + 1) * maxSentenceLength:])
                     charSequencesForSentences.append(
                         charSequencesForWords[i * maxSentenceLength: (i + 1) * maxSentenceLength])
-            else:
+            else:  
                 allSentenceVectors.append(sentenceVectors)
                 charSequencesForSentences.append(charSequencesForWords)
             sentenceVectors, charSequencesForWords = [], []
@@ -61,59 +64,31 @@ def vectorizeData(lines, wordEmbeddings, char2Index, maxWordLength, maxSentenceL
         wholeCharSeqForData, padding='post', maxlen=maxSentenceLength)
     return finalSentenceVectors, finalCharSequences
 
-def createModel(maxWordLen, maxSentLen, totalChars,
-                totalLcats, totalGenders, totalNumbers,
-                totalPersons, totalCases, totalVibhs,
-                totalPOS, totalChunks):
 
-    embeddingLayer = Embedding(totalChars + 2, 50, input_length=maxWordLen)
-
-    charInput = Input(shape=(maxWordLen,))
-    charEmbedding = embeddingLayer(charInput)
-
-    charOutput = Bidirectional(
-        LSTM(50, return_sequences=False, dropout=0.3),
-        merge_mode='sum'
-    )(charEmbedding)
-
-    charModel = Model(charInput, charOutput)
-
-    charSeq = Input(shape=(maxSentLen, maxWordLen))
-    charTD = TimeDistributed(charModel)(charSeq)
-
-    wordSeq = Input(shape=(maxSentLen, 300))
-
-    merge = concatenate([wordSeq, charTD], axis=-1)
-
-    wordSeqLSTM = Bidirectional(
-        LSTM(250, return_sequences=True, dropout=0.3),
-        merge_mode='sum'
-    )(merge)
-
-    lcat = TimeDistributed(Dense(totalLcats, activation='softmax'))(wordSeqLSTM)
-    gender = TimeDistributed(Dense(totalGenders, activation='softmax'))(wordSeqLSTM)
-    number = TimeDistributed(Dense(totalNumbers, activation='softmax'))(wordSeqLSTM)
-    person = TimeDistributed(Dense(totalPersons, activation='softmax'))(wordSeqLSTM)
-    case = TimeDistributed(Dense(totalCases, activation='softmax'))(wordSeqLSTM)
-    vibh = TimeDistributed(Dense(totalVibhs, activation='softmax'))(wordSeqLSTM)
-    pos = TimeDistributed(Dense(totalPOS, activation='softmax'))(wordSeqLSTM)
-    chunk = TimeDistributed(Dense(totalChunks, activation='softmax'))(wordSeqLSTM)
-
-    model = Model(
-        inputs=[charSeq, wordSeq],
-        outputs=[lcat, gender, number, person, case, vibh, pos, chunk]
-    )
-
-    return model
-
-
-def predictMorphFeaturesForSample(lcats, genders, numbers, persons, cases, vibhs, pos, chunk, sampleLen, index2Lcat, index2Gender, index2Number, index2Person, index2Case, index2Vibh, index2POS, index2Chunk):
+def predictMorphFeaturesForSample(tokens, lcats, genders, numbers, persons, cases, vibhs, pos, chunk, sampleLen, index2Lcat, index2Gender, index2Number, index2Person, index2Case, index2Vibh, index2POS, index2Chunk):
     predictedTags = ''
-    for index in range(sampleLen):
-        predictedTags += index2Lcat[np.argmax(lcats[index])] + '\t' + index2Gender[np.argmax(genders[index])] + '\t' + index2Number[np.argmax(
+    for index in range(len(tokens)):
+        predictedTags += tokens[index] + '\t' + index2Lcat[np.argmax(lcats[index])] + '\t' + index2Gender[np.argmax(genders[index])] + '\t' + index2Number[np.argmax(
             numbers[index])] + '\t' + index2Person[np.argmax(persons[index])] + '\t' + index2Case[np.argmax(cases[index])] + '\t' + index2Vibh[np.argmax(vibhs[index])] + '\t' + index2POS[np.argmax(pos[index])] + '\t' + index2Chunk[np.argmax(chunk[index])] + '\n'
     return predictedTags
 
+def getSentencesFromLines(lines):
+    sentences = []
+    current = []
+    
+    for line in lines:
+        line = line.strip()
+        if line:
+            current.append(line)
+        else:
+            if current:
+                sentences.append(current)
+                current = []
+    
+    if current:
+        sentences.append(current)
+    
+    return sentences
 
 def predictPOSChunkAndMorphFeatures(trainedModel, sentenceVectors, charSeqVectors, index2Lcat, index2Gender, index2Number, index2Person, index2Case, index2Vibh, index2POS, index2Chunk, lines, maxSentenceLength):
     lcats, genders, numbers, persons, cases, vibhs, pos, chunk = trainedModel.predict(
@@ -122,8 +97,24 @@ def predictPOSChunkAndMorphFeatures(trainedModel, sentenceVectors, charSeqVector
         lines, maxSentenceLength)
     predictedTags = ''
     assert lcats.shape[0] == genders.shape[0] == numbers.shape[0] == persons.shape[0] == cases.shape[0] == vibhs.shape[0] == pos.shape[0] == chunk.shape[0]
+    sentences = getSentencesFromLines(lines)
+    #tokens = [line.strip() for line in lines if line.strip()]
     for indexSample in range(lcats.shape[0]):
+        # start = indexSample * maxSentenceLength
+        # end = start + sentenceLengths[indexSample]
+
+        # sampleTokens = tokens[start:end]
+        flatSentences = []
+        for sent in sentences:
+            if len(sent) > maxSentenceLength:
+                for i in range(0, len(sent), maxSentenceLength):
+                    flatSentences.append(sent[i:i+maxSentenceLength])
+            else:
+                flatSentences.append(sent)
+
+        sampleTokens = flatSentences[indexSample]
         predictedTags += predictMorphFeaturesForSample(
+            sampleTokens,
             lcats[indexSample],
             genders[indexSample],
             numbers[indexSample],
@@ -141,7 +132,7 @@ def predictPOSChunkAndMorphFeatures(trainedModel, sentenceVectors, charSeqVector
             index2Vibh,
             index2POS,
             index2Chunk
-            )
+        )
         predictedTags += '\n'
     return predictedTags, greaterDict
 
@@ -216,7 +207,7 @@ def writeDataToFile(data, filePath):
 def main():
     parser = ArgumentParser()
     parser.add_argument('--input', dest='inp', help='Enter the input file')
-    parser.add_argument('--embed', dest='embed', help='Enter the word embeddings file')
+    parser.add_argument('--w2v', dest='w2v', help='Enter the word2vec file')
     parser.add_argument('--c2i', dest='c2i',
                         help='Enter the char to index pickle file')
     parser.add_argument('--model', dest='model',
@@ -225,7 +216,7 @@ def main():
                         help='Enter the output path where the predictions will be written to')
     args = parser.parse_args()
     lines = readLinesFromFile(args.inp)
-    embeddings = loadWordVectorsFromFile(args.embed)
+    word2vecModel = loadWordVectorsFromFile(args.w2v)
     char2Index = loadObjectToPickleFile(args.c2i)
     index2Lcat = loadObjectToPickleFile('index-to-lcat-tb.pkl')
     index2Gender = loadObjectToPickleFile('index-to-gender-tb.pkl')
@@ -235,45 +226,19 @@ def main():
     index2Vibh = loadObjectToPickleFile('index-to-vibh-tb.pkl')
     index2POS = loadObjectToPickleFile('index-to-pos-tb.pkl')
     index2Chunk = loadObjectToPickleFile('index-to-chunk-tb.pkl')
-    
+    trainedModel = load_model(args.model)
     maxWordLength = 18
     maxSentenceLength = 165
-    
-    trainedModel = createModel(
-    maxWordLength,
-    maxSentenceLength,
-    len(char2Index),
-    len(index2Lcat),
-    len(index2Gender),
-    len(index2Number),
-    len(index2Person),
-    len(index2Case),
-    len(index2Vibh),
-    len(index2POS),
-    len(index2Chunk))
-
-    trainedModel.load_weights(args.model)
-    
     finalSentenceVectors, finalCharSequences = vectorizeData(
-        lines, embeddings, char2Index, maxWordLength, maxSentenceLength)
-    del embeddings
+        lines, word2vecModel, char2Index, 200, maxWordLength, maxSentenceLength)
+    del word2vecModel
     print(finalSentenceVectors.shape, 'SV', 'CV', finalCharSequences.shape)
-    predictedTags, _ = predictPOSChunkAndMorphFeatures(
-        trainedModel,
-        finalSentenceVectors,
-        finalCharSequences,
-        index2Lcat,
-        index2Gender,
-        index2Number,
-        index2Person,
-        index2Case,
-        index2Vibh,
-        index2POS,
-        index2Chunk,
-        lines,
-        maxSentenceLength)
-
-    writeDataToFile(predictedTags, args.out)
+    predictedTags, greaterDict = predictPOSChunkAndMorphFeatures(trainedModel, finalSentenceVectors,
+                                                         finalCharSequences, index2Lcat, index2Gender, index2Number, index2Person, index2Case, index2Vibh, index2POS, index2Chunk, lines, maxSentenceLength)
+    updatedTags = mergeSeparatedData(
+        predictedTags, maxSentenceLength, greaterDict)
+    writeDataToFile(updatedTags, args.out)
+    # writeDataToFile(predictedTags, args.out)
 
 
 if __name__ == '__main__':
